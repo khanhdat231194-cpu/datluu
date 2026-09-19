@@ -1,6 +1,10 @@
 .assetsignore
 .claude
+.agents
+.git
+.gitignore
 .wrangler
 .dev.vars
+skills-lock.json
 worker
 *.md
