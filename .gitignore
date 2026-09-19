@@ -1,0 +1,15 @@
+# Bí mật và biến môi trường cục bộ
+.dev.vars
+.env
+.env.*
+
+# Trạng thái/cache cục bộ của Wrangler (CSDL SQLite mô phỏng, cache tài khoản Cloudflare)
+.wrangler/
+
+# Cấu hình cục bộ của công cụ AI
+.claude/
+.agents/
+
+node_modules/
+.DS_Store
+Thumbs.db

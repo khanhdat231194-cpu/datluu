@@ -1,0 +1,6 @@
+.assetsignore
+.claude
+.wrangler
+.dev.vars
+worker
+*.md
