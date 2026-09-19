@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hệ thống quản lý lịch trực</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ===== LOGIN SCREEN ===== -->
+  <section id="screen-login" class="screen">
+    <div class="login-wrap">
+      <div class="login-card">
+        <div class="doc-heading">
+          <div class="doc-left">
+            <div class="org-parent"></div>
+            <div class="org-name"></div>
+          </div>
+          <div class="doc-right">
+            <div class="motto-country">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+            <div class="motto-slogan">Độc lập - Tự do - Hạnh phúc</div>
+          </div>
+        </div>
+
+        <h1 class="system-title">HỆ THỐNG QUẢN LÝ LỊCH TRỰC</h1>
+        <p class="notice login-notice" id="login-notice" role="alert" hidden></p>
+
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="admin">Quản trị viên</button>
+          <button class="tab-btn" data-tab="viewer">Cán bộ, nhân viên</button>
+        </div>
+
+        <div id="tab-admin" class="tab-content active">
+          <p class="hint">Đăng nhập với quyền quản trị để phân công lịch trực và quản lý dữ liệu.</p>
+          <label>Mật khẩu quản trị</label>
+          <input type="password" id="admin-password-input" placeholder="Nhập mật khẩu">
+          <button class="btn primary" id="btn-admin-login">Đăng nhập</button>
+          <p class="error" id="admin-login-error"></p>
+          <p class="tiny-hint">Lần đầu sử dụng: đăng nhập bằng mã truy cập máy chủ, sau đó đặt mật khẩu quản trị tại mục Thiết lập.</p>
+        </div>
+
+        <div id="tab-viewer" class="tab-content">
+          <p class="hint">Chọn họ tên để tra cứu lịch trực cá nhân.</p>
+          <label>Họ và tên</label>
+          <select id="viewer-employee-select"></select>
+
+          <div id="viewer-existing-pw">
+            <label>Mật khẩu</label>
+            <input type="password" id="viewer-password-input" placeholder="Nhập mật khẩu">
+            <button class="btn primary" id="btn-viewer-login">Tra cứu lịch trực</button>
+          </div>
+
+          <div id="viewer-new-pw" style="display:none">
+            <p class="notice">Tài khoản chưa có mật khẩu. Nhập mã đơn vị (do quản trị thông báo) và tạo mật khẩu cho lần đăng nhập đầu tiên.</p>
+            <label>Mã đơn vị</label>
+            <input type="password" id="viewer-join-code-input" placeholder="Mã do quản trị thông báo" autocomplete="off">
+            <label>Mật khẩu mới</label>
+            <input type="password" id="viewer-new-password-input" placeholder="Tối thiểu 6 ký tự" autocomplete="new-password">
+            <label>Nhập lại mật khẩu</label>
+            <input type="password" id="viewer-new-password-confirm" placeholder="Nhập lại mật khẩu">
+            <button class="btn primary" id="btn-viewer-set-password">Tạo mật khẩu và tra cứu</button>
+          </div>
+
+          <p class="error" id="viewer-login-error"></p>
+        </div>
+      </div>
+      <p class="footer-note">Hệ thống sử dụng nội bộ</p>
+    </div>
+  </section>
+
+  <!-- ===== ADMIN SCREEN ===== -->
+  <section id="screen-admin" class="screen" style="display:none">
+    <div class="gov-strip">
+      <div class="container strip-inner">
+        <span>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</span>
+        <span class="strip-slogan">Độc lập - Tự do - Hạnh phúc</span>
+      </div>
+    </div>
+    <header class="gov-header">
+      <div class="container header-inner">
+        <div class="org-block">
+          <div class="org-parent"></div>
+          <div class="org-name"></div>
+          <div class="header-system">Hệ thống quản lý lịch trực</div>
+        </div>
+        <div class="user-block">
+          <div class="today-label"></div>
+          <div class="user-line"><span class="sync-status" id="sync-status" role="status" aria-live="polite"></span>Quản trị viên <button class="btn outline small" id="btn-admin-logout">Đăng xuất</button></div>
+        </div>
+      </div>
+    </header>
+
+    <nav class="gov-nav">
+      <div class="container nav-inner">
+        <button class="nav-btn active" data-panel="panel-schedule">Lịch phân công trực</button>
+        <button class="nav-btn" data-panel="panel-auto">Xếp lịch tự động</button>
+        <button class="nav-btn" data-panel="panel-employees">Danh sách nhân viên</button>
+        <button class="nav-btn" data-panel="panel-shifttypes">Loại ca trực</button>
+        <button class="nav-btn" data-panel="panel-tracking">Bảng theo dõi</button>
+        <button class="nav-btn" data-panel="panel-utility">Tiện ích</button>
+        <button class="nav-btn" data-panel="panel-settings">Thiết lập</button>
+      </div>
+    </nav>
+
+    <main class="container main">
+      <!-- Lịch phân công trực -->
+      <div id="panel-schedule" class="panel active">
+        <div class="panel-head">
+          <h3 class="panel-title">Lịch phân công trực</h3>
+          <div class="month-nav">
+            <button class="btn small" id="sched-prev-month" aria-label="Tháng trước">‹</button>
+            <span id="sched-month-label" class="month-label"></span>
+            <button class="btn small" id="sched-next-month" aria-label="Tháng sau">›</button>
+          </div>
+        </div>
+        <div class="filter-bar">
+          <div class="field">
+            <label for="sched-role-filter">Hiển thị</label>
+            <select id="sched-role-filter"></select>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table id="schedule-table" class="grid-table"></table>
+        </div>
+        <div class="legend" id="schedule-legend"></div>
+        <p class="tiny-hint">Bấm vào ô tương ứng để phân công ca trực cho nhân viên theo ngày.</p>
+      </div>
+
+      <!-- Xếp lịch tự động -->
+      <div id="panel-auto" class="panel">
+        <div class="panel-head">
+          <h3 class="panel-title">Xếp lịch trực tự động</h3>
+          <div class="month-nav">
+            <button class="btn small" id="auto-prev-month" aria-label="Tháng trước">‹</button>
+            <span id="auto-month-label" class="month-label"></span>
+            <button class="btn small" id="auto-next-month" aria-label="Tháng sau">›</button>
+          </div>
+        </div>
+
+        <div class="action-bar">
+          <button class="btn primary" id="auto-run-btn">Xếp lịch tự động</button>
+          <button class="btn" id="auto-check-btn">Kiểm tra ràng buộc</button>
+          <button class="btn" id="auto-undo-btn">Hoàn tác lần xếp gần nhất</button>
+          <span class="action-sep"></span>
+          <label class="btn file-btn">Nhập lịch từ tệp Excel<input type="file" id="auto-import-input" accept=".xls,.xlsx,.ods,.csv" hidden></label>
+          <button class="btn" id="auto-export-xlsx">Xuất Excel (mẫu ban hành)</button>
+          <button class="btn" id="auto-export-doc">Xuất Word</button>
+          <button class="btn" id="auto-print">In / Lưu PDF</button>
+        </div>
+        <p class="hint" id="auto-prev-info"></p>
+
+        <div class="settings-grid auto-config">
+          <div class="settings-card">
+            <h4>Ngày nghỉ lễ trong tháng</h4>
+            <label for="auto-holidays">Các ngày nghỉ lễ, Tết (ngoài Thứ Bảy, Chủ nhật)</label>
+            <input type="text" id="auto-holidays" placeholder="VD: 1, 2">
+            <p class="tiny-hint">Ghi số ngày, cách nhau bằng dấu phẩy. Ngày nghỉ lễ được xếp như Thứ Bảy, Chủ nhật (có trực ngày).</p>
+            <button class="btn" id="auto-holidays-save">Lưu ngày nghỉ lễ</button>
+          </div>
+
+          <div class="settings-card">
+            <h4>Quy tắc xếp lịch</h4>
+            <label class="check"><input type="checkbox" id="rule-sameday"> Không trùng số ngày trực của tháng trước</label>
+            <label class="check"><input type="checkbox" id="rule-gap"> Giãn cách giữa hai lần trực (kể cả nối tháng)</label>
+            <div class="inline-field">
+              <label for="rule-gap-days">Số ngày tối thiểu giữa hai lần trực</label>
+              <input type="number" id="rule-gap-days" min="2" max="15">
+            </div>
+            <label class="check"><input type="checkbox" id="rule-weekend"> Cân bằng ca Thứ Bảy, Chủ nhật, ngày lễ (xét 3 tháng gần nhất)</label>
+            <label class="check"><input type="checkbox" id="rule-unit"> Ưu tiên người khác đơn vị trong cùng một ca</label>
+            <label class="check"><input type="checkbox" id="rule-replace"> Xóa lịch cũ của tháng trước khi xếp (bỏ chọn: chỉ bổ sung chỗ còn thiếu)</label>
+          </div>
+        </div>
+
+        <div class="settings-card structure-card">
+          <h4>Cơ cấu ca trực theo vai trò</h4>
+          <div class="table-scroll">
+            <table class="data-table structure-table">
+              <thead>
+                <tr>
+                  <th rowspan="2">Vai trò</th>
+                  <th rowspan="2">Đang trực</th>
+                  <th colspan="1">Ngày làm việc</th>
+                  <th colspan="3">Thứ Bảy, Chủ nhật, ngày lễ</th>
+                  <th rowspan="2">Luân phiên</th>
+                  <th rowspan="2">Xếp theo</th>
+                </tr>
+                <tr>
+                  <th>Trực đêm</th>
+                  <th>Trực ngày</th>
+                  <th>Trực đêm</th>
+                  <th>Cùng người trực cả ngày và đêm</th>
+                </tr>
+              </thead>
+              <tbody id="auto-structure-tbody"></tbody>
+            </table>
+          </div>
+          <p class="tiny-hint">Số lượng tính theo người; với vai trò xếp theo tổ, số lượng là số tổ. Vai trò của từng người được khai báo ở mục Danh sách nhân viên.</p>
+          <div class="btn-row">
+            <button class="btn primary" id="auto-structure-save">Lưu cơ cấu</button>
+          </div>
+        </div>
+
+        <div class="settings-card structure-card">
+          <h4>Chia tổ trực</h4>
+          <div class="filter-bar compact">
+            <div class="field">
+              <label for="group-role">Vai trò</label>
+              <select id="group-role"></select>
+            </div>
+            <div class="field">
+              <label for="group-count">Số tổ</label>
+              <input type="number" id="group-count" min="1" max="50" value="5">
+            </div>
+            <div class="field">
+              <label for="group-prefix">Tên tổ</label>
+              <input type="text" id="group-prefix" value="Tổ">
+            </div>
+            <button class="btn primary" id="group-split-btn">Chia đều</button>
+            <button class="btn" id="group-clear-btn">Bỏ chia tổ</button>
+          </div>
+          <div id="group-summary" class="group-summary"></div>
+        </div>
+
+        <div class="view-tabs">
+          <button class="view-tab active" data-view="roster">Bảng phân công theo ngày</button>
+          <button class="view-tab" data-view="calendar">Lịch tháng</button>
+          <button class="view-tab" data-view="stats">Thống kê công bằng</button>
+        </div>
+        <div id="auto-view-roster" class="auto-view"></div>
+        <div id="auto-view-calendar" class="auto-view" hidden></div>
+        <div id="auto-view-stats" class="auto-view" hidden></div>
+      </div>
+
+      <!-- Nhân viên -->
+      <div id="panel-employees" class="panel">
+        <div class="panel-head">
+          <h3 class="panel-title">Danh sách nhân viên</h3>
+          <button class="btn primary" id="btn-add-employee">+ Thêm nhân viên</button>
+        </div>
+        <div class="filter-bar">
+          <div class="field">
+            <label for="emp-search">Tìm kiếm</label>
+            <input type="text" id="emp-search" placeholder="Họ tên, đơn vị, điện thoại">
+          </div>
+          <div class="field">
+            <label for="emp-role-filter">Vai trò trực</label>
+            <select id="emp-role-filter"></select>
+          </div>
+          <div class="field">
+            <label for="emp-status-filter">Tình trạng</label>
+            <select id="emp-status-filter"></select>
+          </div>
+          <span class="hint count-label" id="emp-count"></span>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table emp-table">
+            <thead><tr><th>Họ và tên</th><th>Giới tính</th><th>Năm sinh</th><th>Chức danh</th><th>Đơn vị</th><th>Điện thoại</th><th>Vai trò trực</th><th>Tổ</th><th>Tình trạng</th><th>Mật khẩu tra cứu</th><th>Thao tác</th></tr></thead>
+            <tbody id="employees-tbody"></tbody>
+          </table>
+        </div>
+        <p class="tiny-hint">Danh sách xếp theo A-Z dựa trên tên chính (tên → tên đệm → họ). Bấm vào ô để sửa trực tiếp; nhấn Enter hoặc chuyển sang ô khác để lưu, nhấn Esc để hủy.</p>
+      </div>
+
+      <!-- Loại ca -->
+      <div id="panel-shifttypes" class="panel">
+        <div class="panel-head">
+          <h3 class="panel-title">Danh mục loại ca trực</h3>
+          <button class="btn primary" id="btn-add-shifttype">+ Thêm loại ca</button>
+        </div>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead><tr><th>Ký hiệu</th><th>Tên ca</th><th>Giờ bắt đầu</th><th>Giờ kết thúc</th><th>Số giờ</th><th>Thao tác</th></tr></thead>
+            <tbody id="shifttypes-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Bảng theo dõi -->
+      <div id="panel-tracking" class="panel">
+        <div class="panel-head">
+          <h3 class="panel-title">Bảng theo dõi thời gian trực</h3>
+        </div>
+        <div class="filter-bar">
+          <div class="field">
+            <label>Nhân viên</label>
+            <select id="track-employee-select"></select>
+          </div>
+          <div class="field">
+            <label>Hình thức tổng hợp</label>
+            <select id="track-mode-select">
+              <option value="day">Theo ngày (trong tháng)</option>
+              <option value="month">Theo tháng (trong năm)</option>
+              <option value="year">Theo năm</option>
+            </select>
+          </div>
+          <div class="field" id="track-month-field">
+            <label>Tháng</label>
+            <select id="track-month-select"></select>
+          </div>
+          <div class="field" id="track-year-field">
+            <label>Năm</label>
+            <select id="track-year-select"></select>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table id="tracking-table" class="data-table"></table>
+        </div>
+      </div>
+
+      <!-- Tiện ích -->
+      <div id="panel-utility" class="panel">
+        <div class="panel-head">
+          <h3 class="panel-title">Tiện ích</h3>
+          <span class="tag-admin">Chỉ quản trị viên</span>
+        </div>
+        <div class="settings-grid">
+          <div class="settings-card">
+            <h4>Kho lưu trữ tệp</h4>
+            <p class="tiny-hint">Tệp được lưu trên kho Cloudflare R2 cùng máy chủ của hệ thống. Quản trị viên đã đăng nhập là dùng được, không cần nhập mã truy cập.</p>
+            <button class="btn primary" id="util-test-conn">Kiểm tra kết nối</button>
+            <p class="success" id="util-conn-status"></p>
+          </div>
+          <div class="settings-card">
+            <h4>Xuất dữ liệu</h4>
+            <p class="tiny-hint">Xuất đầy đủ dữ liệu như trên hệ thống: thông tin đơn vị, danh sách nhân viên, loại ca trực, lịch phân công từng tháng, chi tiết lịch trực, bảng theo dõi theo ngày, tháng, năm. Hệ thống sẽ hỏi định dạng tệp và thư mục lưu.</p>
+            <div class="btn-row">
+              <button class="btn primary" id="util-export-btn">Xuất toàn bộ dữ liệu</button>
+              <button class="btn" id="util-template-btn">Tải tệp mẫu (.xlsx)</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-card files-card">
+          <div class="card-head">
+            <h4>Tệp dữ liệu tự động</h4>
+            <button class="btn small" id="util-refresh-btn">Làm mới</button>
+          </div>
+          <div class="dropzone" id="util-dropzone">
+            <p><b>Kéo thả tệp vào đây</b> hoặc <label class="link-btn">chọn tệp từ máy<input type="file" id="util-file-input" multiple hidden></label></p>
+            <p class="tiny-hint">Tệp được lưu lên kho Cloudflare R2. Tệp Excel (.xlsx, .xls, .ods), CSV, Word (.docx, hoặc .doc do hệ thống xuất) có bảng dữ liệu sẽ tự động cập nhật vào hệ thống và báo kết quả khi hoàn thành.</p>
+          </div>
+          <p class="hint" id="util-progress"></p>
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead><tr><th>Tên tệp</th><th>Dung lượng</th><th>Thời gian tải lên</th><th>Kết quả xử lý</th><th>Thao tác</th></tr></thead>
+              <tbody id="util-files-tbody"></tbody>
+            </table>
+          </div>
+          <details class="guide">
+            <summary>Các dạng bảng được tự động nhận dạng</summary>
+            <ul>
+              <li><b>Lịch trực nghiệp vụ (mẫu ban hành):</b> có cột "Họ và tên", "Trực ngày", "Trực đêm" và các dòng "NGÀY 01/09 (THỨ BA)". Hệ thống cập nhật lịch trực, thông tin cán bộ (giới tính, năm sinh, chức danh, điện thoại, đơn vị, vai trò), danh sách nghỉ chế độ, không tham gia trực và mẫu văn bản.</li>
+              <li><b>Danh sách nhân viên:</b> có cột "Họ và tên" (tùy chọn "Chức danh", "Giới tính", "Năm sinh", "Đơn vị", "Điện thoại", "Vai trò trực", "Tổ", "Tình trạng").</li>
+              <li><b>Loại ca trực:</b> có cột "Tên ca", "Giờ bắt đầu", "Giờ kết thúc" (tùy chọn "Màu").</li>
+              <li><b>Lịch dạng danh sách:</b> có cột "Họ và tên", "Ngày", "Ca trực". Ô ca trực để trống hoặc ghi "Nghỉ" sẽ gỡ ca của ngày đó.</li>
+              <li><b>Lịch dạng tháng:</b> cột "Họ và tên" và các cột ngày 1–31; tên trang hoặc tiêu đề ghi "Tháng 9 năm 2026". Ô ghi ký hiệu (S, C, T) hoặc tên ca; ghi "Nghỉ" hoặc "-" để gỡ ca; ô trống giữ nguyên.</li>
+              <li>Nhân viên chưa có trong hệ thống được thêm tự động. Khi xóa tệp có thể hoàn tác các thay đổi do tệp đó tạo ra.</li>
+            </ul>
+          </details>
+        </div>
+      </div>
+
+      <!-- Thiết lập -->
+      <div id="panel-settings" class="panel">
+        <div class="panel-head">
+          <h3 class="panel-title">Thiết lập hệ thống</h3>
+        </div>
+        <div class="settings-grid">
+          <div class="settings-card">
+            <h4>Thông tin đơn vị</h4>
+            <label>Cơ quan chủ quản</label>
+            <input type="text" id="settings-org-parent" placeholder="VD: UBND QUẬN ...">
+            <label>Tên đơn vị</label>
+            <input type="text" id="settings-org-name" placeholder="VD: PHÒNG ...">
+            <button class="btn primary" id="btn-save-org">Lưu thông tin</button>
+            <p class="success" id="settings-org-success"></p>
+          </div>
+
+          <div class="settings-card">
+            <h4>Mẫu văn bản lịch trực</h4>
+            <label for="doc-title">Tiêu đề ({MM}: tháng, {YYYY}: năm)</label>
+            <input type="text" id="doc-title">
+            <label for="doc-place">Địa danh</label>
+            <input type="text" id="doc-place" placeholder="Hà Nội">
+            <label for="doc-info">Địa điểm, số máy trực (mỗi dòng một nội dung)</label>
+            <textarea id="doc-info" rows="4"></textarea>
+            <label for="doc-recipients">Nơi nhận (mỗi dòng một nơi)</label>
+            <textarea id="doc-recipients" rows="3"></textarea>
+            <label for="doc-sign-title">Thẩm quyền ký (mỗi dòng một nội dung)</label>
+            <textarea id="doc-sign-title" rows="2"></textarea>
+            <label for="doc-signer">Người ký</label>
+            <input type="text" id="doc-signer">
+            <button class="btn primary" id="btn-save-doc">Lưu mẫu văn bản</button>
+            <p class="success" id="doc-success"></p>
+          </div>
+
+          <div class="settings-card">
+            <h4>Đổi mật khẩu quản trị</h4>
+            <label>Mật khẩu hiện tại</label>
+            <input type="password" id="settings-current-pw">
+            <label>Mật khẩu mới</label>
+            <input type="password" id="settings-new-pw">
+            <label>Nhập lại mật khẩu mới</label>
+            <input type="password" id="settings-confirm-pw">
+            <button class="btn primary" id="btn-change-admin-pw">Đổi mật khẩu</button>
+            <p class="error" id="settings-error"></p>
+            <p class="success" id="settings-success"></p>
+          </div>
+
+          <div class="settings-card">
+            <h4>Mã đơn vị (kích hoạt tài khoản cán bộ)</h4>
+            <p class="tiny-hint" id="join-code-status"></p>
+            <label for="settings-join-code">Mã đơn vị mới</label>
+            <input type="text" id="settings-join-code" autocomplete="off" maxlength="200" placeholder="Tối thiểu 8 ký tự, nên có cả chữ và số">
+            <button class="btn primary" id="btn-save-join-code">Lưu mã đơn vị</button>
+            <p class="error" id="join-code-error"></p>
+            <p class="success" id="join-code-success"></p>
+          </div>
+
+          <div class="settings-card">
+            <h4>Sao lưu dữ liệu</h4>
+            <p class="tiny-hint">Dữ liệu được lưu chung trên máy chủ và tự động cập nhật cho mọi người dùng. Nên xuất dữ liệu định kỳ để sao lưu. Nhập tệp .json sẽ thay toàn bộ dữ liệu trên máy chủ (dùng để chuyển dữ liệu từ bản cũ chạy trên một máy).</p>
+            <div class="btn-row">
+              <button class="btn" id="btn-export-data">Xuất dữ liệu (.json)</button>
+              <label class="btn file-btn">
+                Nhập dữ liệu (.json)
+                <input type="file" id="import-file-input" accept="application/json" hidden>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </section>
+
+  <!-- ===== VIEWER SCREEN ===== -->
+  <section id="screen-viewer" class="screen" style="display:none">
+    <div class="gov-strip">
+      <div class="container strip-inner">
+        <span>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</span>
+        <span class="strip-slogan">Độc lập - Tự do - Hạnh phúc</span>
+      </div>
+    </div>
+    <header class="gov-header">
+      <div class="container header-inner">
+        <div class="org-block">
+          <div class="org-parent"></div>
+          <div class="org-name"></div>
+          <div class="header-system">Hệ thống quản lý lịch trực</div>
+        </div>
+        <div class="user-block">
+          <div class="today-label"></div>
+          <div class="user-line"><span id="viewer-title"></span> <button class="btn outline small" id="btn-viewer-logout">Đăng xuất</button></div>
+        </div>
+      </div>
+    </header>
+
+    <main class="container main">
+      <div class="panel active">
+        <div class="panel-head">
+          <h3 class="panel-title">Lịch trực cá nhân</h3>
+          <div class="month-nav">
+            <button class="btn small" id="viewer-prev-month" aria-label="Tháng trước">‹</button>
+            <span id="viewer-month-label" class="month-label"></span>
+            <button class="btn small" id="viewer-next-month" aria-label="Tháng sau">›</button>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table id="viewer-calendar-table" class="data-table"></table>
+        </div>
+      </div>
+
+      <div class="panel active">
+        <div class="panel-head">
+          <h3 class="panel-title">Lịch trực chung của đơn vị</h3>
+        </div>
+        <div id="viewer-roster"></div>
+      </div>
+
+      <div class="panel active">
+        <div class="panel-head">
+          <h3 class="panel-title">Bảng theo dõi thời gian trực</h3>
+        </div>
+        <div class="filter-bar">
+          <div class="field">
+            <label>Hình thức tổng hợp</label>
+            <select id="viewer-track-mode-select">
+              <option value="day">Theo ngày (tháng đang xem)</option>
+              <option value="month">Theo tháng (trong năm)</option>
+              <option value="year">Theo năm</option>
+            </select>
+          </div>
+          <div class="field" id="viewer-track-year-field">
+            <label>Năm</label>
+            <select id="viewer-track-year-select"></select>
+          </div>
+        </div>
+        <div class="table-scroll">
+          <table id="viewer-tracking-table" class="data-table"></table>
+        </div>
+      </div>
+    </main>
+  </section>
+
+</div>
+
+<!-- ===== MODAL: assign shift ===== -->
+<div id="modal-assign" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-head"><h3 id="modal-assign-title">Phân công ca trực</h3></div>
+    <div class="modal-body">
+      <div id="modal-assign-list" class="shift-pick-list"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn danger" id="modal-clear-shift">Hủy phân công</button>
+      <button class="btn" id="modal-assign-close">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: employee form ===== -->
+<div id="modal-employee" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-head"><h3 id="modal-employee-title">Thêm nhân viên</h3></div>
+    <div class="modal-body">
+      <label for="employee-name-input">Họ và tên</label>
+      <input type="text" id="employee-name-input" placeholder="Nguyễn Văn A">
+      <div class="two-col">
+        <div>
+          <label for="employee-gender-input">Giới tính</label>
+          <select id="employee-gender-input"><option value=""></option><option>Nam</option><option>Nữ</option></select>
+        </div>
+        <div>
+          <label for="employee-birth-input">Năm sinh</label>
+          <input type="text" id="employee-birth-input" inputmode="numeric" placeholder="1985">
+        </div>
+      </div>
+      <div class="two-col">
+        <div>
+          <label for="employee-position-input">Chức danh</label>
+          <input type="text" id="employee-position-input" placeholder="KSV Trung cấp">
+        </div>
+        <div>
+          <label for="employee-unit-input">Đơn vị</label>
+          <input type="text" id="employee-unit-input" placeholder="Phòng 2">
+        </div>
+      </div>
+      <div class="two-col">
+        <div>
+          <label for="employee-phone-input">Điện thoại</label>
+          <input type="text" id="employee-phone-input" placeholder="0912.345.678">
+        </div>
+        <div>
+          <label for="employee-group-input">Tổ trực</label>
+          <input type="text" id="employee-group-input" placeholder="Tổ 1">
+        </div>
+      </div>
+      <div class="two-col">
+        <div>
+          <label for="employee-role-input">Vai trò trực</label>
+          <select id="employee-role-input"></select>
+        </div>
+        <div>
+          <label for="employee-status-input">Tình trạng</label>
+          <select id="employee-status-input"></select>
+        </div>
+      </div>
+      <label for="employee-note-input">Ghi chú</label>
+      <input type="text" id="employee-note-input" placeholder="VD: nghỉ thai sản đến 08/2028">
+      <p class="error" id="employee-form-error"></p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn primary" id="employee-save-btn">Lưu</button>
+      <button class="btn" id="employee-cancel-btn">Hủy</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: shift type form ===== -->
+<div id="modal-shifttype" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-head"><h3 id="modal-shifttype-title">Thêm loại ca</h3></div>
+    <div class="modal-body">
+      <label>Tên ca</label>
+      <input type="text" id="shifttype-name-input" maxlength="100" placeholder="Trực ngày">
+      <label for="shifttype-code-input">Ký hiệu (tối đa 4 ký tự)</label>
+      <input type="text" id="shifttype-code-input" maxlength="4" placeholder="N">
+      <div class="two-col">
+        <div>
+          <label>Giờ bắt đầu</label>
+          <input type="time" id="shifttype-start-input" value="06:00">
+        </div>
+        <div>
+          <label>Giờ kết thúc</label>
+          <input type="time" id="shifttype-end-input" value="14:00">
+        </div>
+      </div>
+      <label>Màu ký hiệu</label>
+      <input type="color" id="shifttype-color-input" value="#1f3864">
+      <p class="error" id="shifttype-form-error"></p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn primary" id="shifttype-save-btn">Lưu</button>
+      <button class="btn" id="shifttype-cancel-btn">Hủy</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: confirm ===== -->
+<div id="modal-confirm" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-head"><h3>Xác nhận</h3></div>
+    <div class="modal-body">
+      <p id="modal-confirm-text">Bạn có chắc chắn?</p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn danger" id="modal-confirm-ok">Đồng ý</button>
+      <button class="btn" id="modal-confirm-cancel">Hủy</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: export format ===== -->
+<div id="modal-export" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-head"><h3>Xuất toàn bộ dữ liệu</h3></div>
+    <div class="modal-body">
+      <p class="hint export-question">Bạn muốn xuất dữ liệu ra định dạng nào?</p>
+      <div class="format-list">
+        <label class="format-item"><input type="radio" name="export-format" value="xlsx"><span><b>Excel (.xlsx)</b><small>Mỗi phần dữ liệu một trang tính; chỉnh sửa được và tải lại vào mục Tiện ích.</small></span></label>
+        <label class="format-item"><input type="radio" name="export-format" value="doc"><span><b>Word (.doc)</b><small>Văn bản khổ ngang, có quốc hiệu và tên đơn vị.</small></span></label>
+        <label class="format-item"><input type="radio" name="export-format" value="pdf"><span><b>PDF</b><small>Mở hộp thoại in: chọn "Lưu dưới dạng PDF" rồi chọn thư mục lưu.</small></span></label>
+      </div>
+      <p class="tiny-hint">Với Excel và Word, hộp thoại sẽ mở để bạn chọn thư mục lưu và đặt tên tệp.</p>
+      <p class="error" id="export-error"></p>
+    </div>
+    <div class="modal-actions">
+      <button class="btn primary" id="export-confirm-btn">Xuất tệp</button>
+      <button class="btn" id="export-cancel-btn">Hủy</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: processing report ===== -->
+<div id="modal-report" class="modal-overlay" style="display:none">
+  <div class="modal wide">
+    <div class="modal-head"><h3 id="report-title">Hoàn thành</h3></div>
+    <div class="modal-body" id="report-body"></div>
+    <div class="modal-actions">
+      <button class="btn primary" id="report-close-btn">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: delete stored file ===== -->
+<div id="modal-file-delete" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-head"><h3>Xóa tệp</h3></div>
+    <div class="modal-body"><p id="file-delete-text"></p></div>
+    <div class="modal-actions">
+      <button class="btn danger" id="file-delete-revert">Xóa tệp và hoàn tác</button>
+      <button class="btn" id="file-delete-only">Chỉ xóa tệp</button>
+      <button class="btn" id="file-delete-cancel">Hủy</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+
+<script src="vendor/xlsx.full.min.js"></script>
+<script src="vendor/jszip.min.js"></script>
+<script src="app.js"></script>
+<script src="tienich.js"></script>
+<script src="xeplich.js"></script>
+<script src="dongbo.js"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+name = "ca-truc-tien-ich"
+main = "src/index.js"
+compatibility_date = "2026-08-01"
+
+# Trang web (index.html, app.js, ...) nằm ở thư mục gốc dự án; danh sách loại trừ trong ../.assetsignore
+[assets]
+directory = "../"
+binding = "ASSETS"
+
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "file-data-chinh"
